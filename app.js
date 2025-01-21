@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", function() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
   const context = canvas.getContext("2d");
+  let isScanning = true; // Flag to control scanning behavior
 
   // Get user media (camera)
   navigator.mediaDevices
@@ -28,13 +29,15 @@ document.addEventListener("DOMContentLoaded", function() {
       // Get image data from canvas
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       const code = jsQR(imageData.data, canvas.width, canvas.height);
-      
-      if (code) {
+
+      if (code && isScanning) {
         const qrCodeData = code.data;
-        
+        isScanning = false; // Stop further scanning until processed
+
         // Check if the QR code has been scanned before (stored in localStorage)
         if (localStorage.getItem(qrCodeData)) {
           alert("This QR Code has already been used.");
+          isScanning = true; // Allow scanning again
         } else {
           alert("QR Code Scanned: " + qrCodeData); // Display the decoded QR code data
 
@@ -45,15 +48,21 @@ document.addEventListener("DOMContentLoaded", function() {
           fetch('https://script.google.com/macros/s/AKfycbzBVy9dRQFh8CjySBBqvrYRqQBFNX51lEutUtDOJWJA6o93vZiIEOwdXho8JeQXtTnmOA/exec', {
             method: 'POST',
             body: new URLSearchParams({
-              qrCode: qrCodeData  // Send the scanned QR code data
+              qrCode: qrCodeData // Send the scanned QR code data
             })
           })
           .then(response => response.text())
           .then(responseData => {
             console.log(responseData); // Log the response from the server
+            alert("QR Code data sent successfully.");
           })
           .catch(error => {
             console.error('Error:', error); // Handle any errors
+            alert("Failed to send QR code data. Please try again.");
+          })
+          .finally(() => {
+            // Allow scanning again after processing
+            isScanning = true;
           });
         }
       }
